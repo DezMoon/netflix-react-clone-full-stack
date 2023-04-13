@@ -5,45 +5,50 @@ const jwt = require("jsonwebtoken");
 
 //Registration
 router.post("/register", async (req, res) => {
-    const newUser = User({
-        username: req.body.username,
-        email: req.body.email,
-        password: CryptoJS.AES.encrypt(req.body.password, process.env.SECRET_KEY).toString(),
-    });
+  const newUser = User({
+    username: req.body.username,
+    email: req.body.email,
+    password: CryptoJS.AES.encrypt(
+      req.body.password,
+      process.env.SECRET_KEY
+    ).toString(),
+  });
 
-    try{
+  try {
     const user = await newUser.save();
-    return res.status(201).json(user)
-    }catch(err){
-       return res.status(500).json(err);
-    }
+    return res.status(201).json(user);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
-
-
 
 //Login
 router.post("/login", async (req, res) => {
-    try{
-        const user = await User.findOne({email: req.body.email});
-        !user && res.status(401).json("Wrong UserName or Password!");
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    !user && res.status(401).json("Wrong UserName or Password!");
 
-        const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
-        const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
+    const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
+    const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
 
-        originalPassword !== req.body.password && 
-            res.status(401).json("Wrong UserName or Password!");
+    originalPassword !== req.body.password &&
+      res.status(401).json("Wrong UserName or Password!");
 
-            const accessToken = jwt.sign({
-                id: user._id, isAdmin: user.isAdmin
-            }, process.env.SECRET_KEY,{expiresIn: "5d"});
+    const accessToken = jwt.sign(
+      {
+        id: user._id,
+        isAdmin: user.isAdmin,
+      },
+      process.env.SECRET_KEY,
+      { expiresIn: "5d" }
+    );
 
-        const {password, ...info} = user._doc;
+    const { password, ...info } = user._doc;
 
-        return res.status(200).json({...info, accessToken});
-
-    } catch (err) {
-       return res.status(500).json(err);
-    }
+    return res.status(200).json({ ...info, accessToken });
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 module.exports = router;
